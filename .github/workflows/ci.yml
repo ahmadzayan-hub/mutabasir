@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - mutabasir/**
+  pull_request:
+    branches:
+      - mutabasir/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: typecheck / lint / test / build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- --reporter=verbose
+
+      - name: Build
+        run: npm run build
+        env:
+          # Prevent Next telemetry noise in CI logs.
+          NEXT_TELEMETRY_DISABLED: "1"
