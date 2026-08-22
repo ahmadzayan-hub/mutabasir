@@ -5,7 +5,7 @@ import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { OfflineBanner } from "@/components/pwa/offline-banner";
 import "./globals.css";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://mutabasir.ae";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://mutabasir.ae";
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),

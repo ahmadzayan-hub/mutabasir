@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE = process.env.NEXT_PUBLIC_APP_URL ?? "https://mutabasir.ae";
+const BASE = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://mutabasir.ae";
 
 const WORKSPACE_ONLY = ["/projects", "/new", "/settings"];
 
