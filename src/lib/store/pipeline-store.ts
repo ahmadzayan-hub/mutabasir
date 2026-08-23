@@ -13,6 +13,7 @@ import type {
   Confidence,
   BriefAudience,
 } from "@/types/database";
+import type { EvidenceObject } from "@/lib/evidence/evidence";
 
 const PREFIX = "mutabasir.pipeline.v1";
 
@@ -47,12 +48,13 @@ export interface PipelineSnapshot
 export interface PipelineState {
   documents: PipelineDocument[];
   facts: DbExtractedFact[];
+  evidence: EvidenceObject[];
   briefs: PipelineBrief[];
   snapshots: PipelineSnapshot[];
 }
 
 function emptyState(): PipelineState {
-  return { documents: [], facts: [], briefs: [], snapshots: [] };
+  return { documents: [], facts: [], evidence: [], briefs: [], snapshots: [] };
 }
 
 function keyFor(projectId: string) {
@@ -72,6 +74,7 @@ export function loadPipeline(projectId: string): PipelineState {
     return {
       documents: Array.isArray(parsed.documents) ? parsed.documents : [],
       facts: Array.isArray(parsed.facts) ? parsed.facts : [],
+      evidence: Array.isArray(parsed.evidence) ? parsed.evidence : [],
       briefs: Array.isArray(parsed.briefs) ? parsed.briefs : [],
       snapshots: Array.isArray(parsed.snapshots) ? parsed.snapshots : [],
     };

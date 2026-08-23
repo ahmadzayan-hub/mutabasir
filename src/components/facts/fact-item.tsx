@@ -61,6 +61,15 @@ export function FactItem({
               {doc ? ` · ${doc.filename}` : ""}
             </p>
           )}
+          {fact.evidence_id && (
+            <p
+              className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-[10px] text-slate-500"
+              title={fact.evidence_id}
+              dir="ltr"
+            >
+              {fact.evidence_id.slice(0, 3)}…{fact.evidence_id.slice(-6)}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <span

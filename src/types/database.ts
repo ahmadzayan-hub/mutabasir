@@ -74,6 +74,8 @@ export interface DbExtractedFact {
   citation_quote: string | null;
   confidence: Confidence;
   user_verified: boolean;
+  /** EvidenceObject minted for this fact (docs/contracts/evidence-object.schema.json). */
+  evidence_id?: string | null;
   created_at: string;
 }
 

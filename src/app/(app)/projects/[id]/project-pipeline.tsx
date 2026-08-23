@@ -36,6 +36,7 @@ import { BriefCard } from "./_pipeline/brief-card";
 import { PublishCard, type QualitySummary } from "./_pipeline/publish-card";
 import { AgentPanel } from "@/components/agents/agent-panel";
 import { orchestrateAgents } from "@/lib/agents/orchestrator";
+import { mintEvidenceForFacts } from "@/lib/evidence/evidence";
 
 interface Props {
   project: DbProject;
@@ -45,6 +46,7 @@ const MAX_FILES = 25;
 const INITIAL_STATE: PipelineState = {
   documents: [],
   facts: [],
+  evidence: [],
   briefs: [],
   snapshots: [],
 };
@@ -143,6 +145,7 @@ export function ProjectPipeline({ project }: Props) {
       ...s,
       documents: s.documents.filter((d) => d.id !== id),
       facts: s.facts.filter((f) => f.document_id !== id),
+      evidence: s.evidence.filter((e) => e.source_document_id !== id),
     }));
     setDocTexts((m) => {
       const { [id]: _omit, ...rest } = m;
@@ -226,7 +229,12 @@ export function ProjectPipeline({ project }: Props) {
           documents: state.documents,
           documentTexts: docTexts,
         });
-        setState((s) => ({ ...s, facts: result.facts }));
+        const minted = await mintEvidenceForFacts({
+          facts: result.facts,
+          documents: state.documents,
+          documentTexts: docTexts,
+        });
+        setState((s) => ({ ...s, facts: minted.facts, evidence: minted.evidence }));
         setExtractionMeta({
           used_llm: result.used_llm,
           model_id: result.model_id,
@@ -240,7 +248,12 @@ export function ProjectPipeline({ project }: Props) {
           authorityEn: project.client_authority_en,
           counterpartyEn: project.counterparty_en,
         });
-        setState((s) => ({ ...s, facts }));
+        const minted = await mintEvidenceForFacts({
+          facts,
+          documents: state.documents,
+          documentTexts: docTexts,
+        });
+        setState((s) => ({ ...s, facts: minted.facts, evidence: minted.evidence }));
         setExtractionMeta({
           used_llm: false,
           model_id: null,
