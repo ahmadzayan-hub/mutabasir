@@ -153,6 +153,25 @@ export function EvidenceSplitView({ facts, evidence, documents, documentTexts }:
             )}
           </h3>
 
+          {activeFact?.unsupported_claims?.length ? (
+            // The claim contradicts the text it cites. This sits above the
+            // source panel, not beside the claim, because the reader is about
+            // to look at the evidence -- this is the moment they need to know
+            // the two disagree.
+            <p
+              role="alert"
+              className="mb-2 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-900"
+            >
+              {e.contradicted}
+              <span className="mt-1 block font-medium">
+                {e.contradictedField}:{" "}
+                {activeFact.unsupported_claims
+                  .map((k) => `${k} = ${String(activeFact.payload_json?.[k] ?? "")}`)
+                  .join(" · ")}
+              </span>
+            </p>
+          ) : null}
+
           {!documentText ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
               {e.noText}

@@ -341,6 +341,9 @@ export const dictionary = {
           "Source text is not in memory for this document. Re-add the file on the Upload step to open evidence in place. The claim and its evidence id stay valid.",
         notLocated:
           "This claim's exact span was not located in the parsed text; the quote and page are shown instead.",
+        contradicted:
+          "This claim states a figure that does not appear in the text it cites. Treat it as unverified and read the source before using it.",
+        contradictedField: "Disputed value",
         empty: "No evidence yet. Run extraction to mint evidence for each claim.",
         idLabel: "Evidence id",
         confidence: "Confidence",
@@ -829,6 +832,9 @@ export const dictionary = {
           "نص هذا المستند غير محفوظ في الذاكرة. أعد إضافة الملف في خطوة الرفع لفتح الدليل في موضعه، والاستنتاج ومعرّف الدليل يبقيان صالحين.",
         notLocated:
           "تعذّر تحديد موضع هذا الاستنتاج داخل النص المُحلَّل؛ يُعرض الاقتباس والصفحة بدلاً منه.",
+        contradicted:
+          "هذا الاستنتاج يذكر رقماً لا يظهر في النص الذي يستشهد به. اعتبره غير مُتحقَّق منه، واقرأ المصدر قبل الاعتماد عليه.",
+        contradictedField: "القيمة المتنازع عليها",
         empty: "لا توجد أدلة بعد. شغّل الاستخراج لسكّ دليل لكل استنتاج.",
         idLabel: "معرّف الدليل",
         confidence: "الثقة",

@@ -81,18 +81,86 @@ export function anchorQuote(quote: string, documentText: string): AnchorResult {
  * Re-anchor a batch of facts against their own source documents.
  * Facts whose document text is unavailable are returned untouched.
  */
+/**
+ * Numbers a quote actually contains, normalised so "12,450,000",
+ * "12450000" and "AED 12,450,000" all compare equal.
+ */
+export function quotedNumbers(quote: string): Set<string> {
+  const out = new Set<string>();
+
+  // Scaled shorthand first: "AED 1.24bn" and "1,240,000,000" are the same
+  // figure, and flagging that pair as a contradiction would be a false
+  // alarm -- the kind that teaches people to ignore the flag.
+  const SCALE: Record<string, number> = { k: 1e3, m: 1e6, bn: 1e9, b: 1e9, tn: 1e12 };
+  for (const m of quote.matchAll(/(\d+(?:\.\d+)?)\s*(bn|tn|[kmb])\b/gi)) {
+    const scaled = Number(m[1]) * (SCALE[m[2]!.toLowerCase()] ?? 1);
+    if (Number.isFinite(scaled) && Number.isInteger(scaled)) out.add(String(scaled));
+  }
+
+  for (const m of quote.matchAll(/\d[\d,._\s]*\d|\d/g)) {
+    const digits = m[0].replace(/[^\d]/g, "");
+    if (digits) out.add(String(Number(digits)));
+  }
+  return out;
+}
+
+/**
+ * Payload keys whose numeric value does not appear in the citation.
+ *
+ * This is the check that stops an evidence product from asserting a figure
+ * its own evidence does not contain. Extraction produces a payload and a
+ * quote independently -- the deterministic baseline composes both, and a
+ * model can paraphrase one without the other -- so the two can disagree.
+ * When they do, the claim is not supported by the text the reader is being
+ * shown, and saying so is the whole job.
+ *
+ * Only whole numbers are compared. Dates, percentages written in words and
+ * free text are left to the reader; a false "unsupported" flag would be
+ * worse than none, because it teaches people to ignore the flag.
+ */
+export function unsupportedNumbers(
+  payload: Record<string, unknown>,
+  quote: string,
+): string[] {
+  if (!quote) return [];
+  const inQuote = quotedNumbers(quote);
+  if (inQuote.size === 0) return [];
+  const out: string[] = [];
+  for (const [key, value] of Object.entries(payload)) {
+    if (typeof value !== "number" || !Number.isFinite(value)) continue;
+    if (!Number.isInteger(value)) continue;
+    if (!inQuote.has(String(value))) out.push(key);
+  }
+  return out;
+}
+
 export function anchorFacts(
   facts: DbExtractedFact[],
   documentTexts: Record<string, string>,
-): { facts: DbExtractedFact[]; anchored: number } {
+): { facts: DbExtractedFact[]; anchored: number; unsupported: number } {
   let anchored = 0;
+  let unsupported = 0;
   const out = facts.map((f) => {
     const text = documentTexts[f.document_id];
     if (!text || !f.citation_quote) return f;
+
     const res = anchorQuote(f.citation_quote, text);
-    if (!res.matched || res.quote === f.citation_quote) return f;
-    anchored += 1;
-    return { ...f, citation_quote: res.quote };
+    const quote = res.matched ? res.quote : f.citation_quote;
+    if (res.matched && res.quote !== f.citation_quote) anchored += 1;
+
+    // Reconcile the claim against the text it now points at. A fact whose
+    // own citation contradicts it must not be presented as a fact.
+    const bad = unsupportedNumbers(f.payload_json, quote);
+    if (bad.length === 0) {
+      return quote === f.citation_quote ? f : { ...f, citation_quote: quote };
+    }
+    unsupported += 1;
+    return {
+      ...f,
+      citation_quote: quote,
+      unsupported_claims: bad,
+      confidence: "LOW" as DbExtractedFact["confidence"],
+    };
   });
-  return { facts: out, anchored };
+  return { facts: out, anchored, unsupported };
 }

@@ -76,6 +76,13 @@ export interface DbExtractedFact {
   user_verified: boolean;
   /** EvidenceObject minted for this fact (docs/contracts/evidence-object.schema.json). */
   evidence_id?: string | null;
+  /**
+   * Payload keys whose value does not appear in `citation_quote`.
+   * Derived at read time by `anchorFacts`, never stored: it is a statement
+   * about this pairing of claim and citation, so it must be recomputed
+   * whenever either changes rather than cached and trusted.
+   */
+  unsupported_claims?: string[];
   created_at: string;
 }
 
