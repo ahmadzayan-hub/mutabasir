@@ -51,6 +51,36 @@ function fact(
   };
 }
 
+/**
+ * Read a contract value out of the document instead of asserting one.
+ *
+ * The baseline used to emit a hard-coded "AED 12,450,000" whatever the
+ * uploaded file said. In a product whose entire promise is "show me the
+ * evidence", a figure nobody read is the one thing that must never ship --
+ * and once citations were anchored to real text, the invented number began
+ * visibly contradicting its own quote. So: find the amount in the text, or
+ * emit no contract-value fact at all. A missing fact is honest; a
+ * fabricated one is not.
+ */
+function readContractValue(
+  text: string | null,
+): { amount: number; currency: string; sentence: string } | null {
+  if (!text) return null;
+  const CURRENCY = /\b(AED|USD|EUR|GBP|SAR|QAR|KWD|OMR|BHD)\b/i;
+  for (const raw of text.split(/(?<=[.\u061F?!])\s+|\r?\n/)) {
+    const sentence = raw.trim();
+    if (!sentence || !CURRENCY.test(sentence)) continue;
+    const cur = sentence.match(CURRENCY);
+    const num = sentence.match(/\d[\d,._\s]*\d/);
+    if (!cur || !num) continue;
+    const amount = Number(num[0].replace(/[^\d]/g, ""));
+    // A contract value, not a clause number or a page count.
+    if (!Number.isFinite(amount) || amount < 1000) continue;
+    return { amount, currency: cur[1]!.toUpperCase(), sentence };
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 
 function contractFacts(input: ExtractionInput): DbExtractedFact[] {
@@ -64,6 +94,7 @@ function contractFacts(input: ExtractionInput): DbExtractedFact[] {
 
   const counter = counterpartyEn ?? "Counterparty";
   const auth = authorityEn ?? "Client Authority";
+  const value = readContractValue(primary.preview_text);
 
   return [
     fact(
@@ -75,15 +106,19 @@ function contractFacts(input: ExtractionInput): DbExtractedFact[] {
       1,
       "HIGH",
     ),
-    fact(
-      projectId,
-      primary.id,
-      "contract_value",
-      { amount: 12_450_000, currency: "AED" },
-      "The total contract value shall be AED 12,450,000 inclusive of all taxes and disbursements.",
-      3,
-      "HIGH",
-    ),
+    ...(value
+      ? [
+          fact(
+            projectId,
+            primary.id,
+            "contract_value",
+            { amount: value.amount, currency: value.currency },
+            value.sentence,
+            3,
+            "HIGH",
+          ),
+        ]
+      : []),
     fact(
       projectId,
       primary.id,

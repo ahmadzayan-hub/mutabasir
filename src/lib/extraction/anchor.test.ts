@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { anchorFacts, anchorQuote, candidateLines, significantTokens } from "./anchor";
+import {
+  anchorFacts,
+  anchorQuote,
+  candidateLines,
+  quotedNumbers,
+  significantTokens,
+  unsupportedNumbers,
+} from "./anchor";
 import type { DbExtractedFact } from "@/types/database";
 
 const DOC = `CONTRACT AGREEMENT - PROJECT ALPHA
@@ -96,5 +103,92 @@ describe("anchorFacts", () => {
     const res = anchorFacts(facts, { doc_1: DOC });
     expect(res.anchored).toBe(0);
     expect(res.facts[0]).toBe(facts[0]);
+  });
+});
+
+describe("reconciling a claim against the text it cites", () => {
+  it("reads every number out of a quote regardless of formatting", () => {
+    const n = quotedNumbers("Total AED 12,400,000 over 18 months, 5% retention");
+    expect(n.has("12400000")).toBe(true);
+    expect(n.has("18")).toBe(true);
+    expect(n.has("5")).toBe(true);
+  });
+
+  it("flags a payload figure the citation does not contain", () => {
+    const bad = unsupportedNumbers(
+      { amount: 12_450_000, currency: "AED" },
+      "The total contract value is AED 12,400,000 inclusive of all taxes.",
+    );
+    expect(bad).toEqual(["amount"]);
+  });
+
+  it("stays silent when the figure is there", () => {
+    const bad = unsupportedNumbers(
+      { amount: 12_400_000, currency: "AED" },
+      "The total contract value is AED 12,400,000 inclusive of all taxes.",
+    );
+    expect(bad).toEqual([]);
+  });
+
+  it("ignores non-numeric and non-integer payload values", () => {
+    const bad = unsupportedNumbers(
+      { jurisdiction: "United Arab Emirates", rate: 4.5, months: 18 },
+      "The Term continues for eighteen (18) calendar months.",
+    );
+    expect(bad).toEqual([]);
+  });
+
+  it("says nothing when the citation carries no numbers at all", () => {
+    // A quote with no digits cannot contradict a figure; flagging here
+    // would fire on every qualitative citation and train people to ignore it.
+    const bad = unsupportedNumbers({ amount: 12_450_000 }, "Governed by the laws of the UAE.");
+    expect(bad).toEqual([]);
+  });
+
+  it("downgrades a fact whose own evidence contradicts it", () => {
+    const doc = "The total contract value is AED 12,400,000 inclusive of all taxes.";
+    const f = mkFact("The total contract value shall be AED 12,450,000 inclusive of all taxes.");
+    f.payload_json = { amount: 12_450_000, currency: "AED" };
+    f.confidence = "HIGH";
+
+    const { facts, unsupported } = anchorFacts([f], { doc_1: doc });
+
+    expect(unsupported).toBe(1);
+    expect(facts[0]!.citation_quote).toContain("12,400,000");
+    expect(facts[0]!.unsupported_claims).toEqual(["amount"]);
+    expect(facts[0]!.confidence).toBe("LOW");
+  });
+
+  it("leaves a fact alone when claim and citation agree", () => {
+    const doc = "The total contract value is AED 12,400,000 inclusive of all taxes.";
+    const f = mkFact("The total contract value shall be AED 12,400,000 inclusive of all taxes.");
+    f.payload_json = { amount: 12_400_000, currency: "AED" };
+    f.confidence = "HIGH";
+
+    const { facts, unsupported } = anchorFacts([f], { doc_1: doc });
+
+    expect(unsupported).toBe(0);
+    expect(facts[0]!.unsupported_claims).toBeUndefined();
+    expect(facts[0]!.confidence).toBe("HIGH");
+  });
+});
+
+describe("scaled shorthand is not a contradiction", () => {
+  it("reads 1.24bn as 1,240,000,000", () => {
+    const n = quotedNumbers("Awarded value AED 1.24bn; variations +3.2%.");
+    expect(n.has("1240000000")).toBe(true);
+  });
+
+  it("does not flag a payload written in full against a quote written in shorthand", () => {
+    const bad = unsupportedNumbers(
+      { amount: 1_240_000_000, currency: "AED", change_orders_pct: 3.2 },
+      "Awarded value AED 1.24bn; cumulative variation orders +3.2% of contract sum.",
+    );
+    expect(bad).toEqual([]);
+  });
+
+  it("handles k and m as well", () => {
+    expect(quotedNumbers("a 250k retainer").has("250000")).toBe(true);
+    expect(quotedNumbers("a 4.5m budget").has("4500000")).toBe(true);
   });
 });
