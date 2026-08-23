@@ -37,6 +37,8 @@ import { PublishCard, type QualitySummary } from "./_pipeline/publish-card";
 import { AgentPanel } from "@/components/agents/agent-panel";
 import { orchestrateAgents } from "@/lib/agents/orchestrator";
 import { mintEvidenceForFacts } from "@/lib/evidence/evidence";
+import { anchorFacts } from "@/lib/extraction/anchor";
+import { EvidenceSplitView } from "@/components/evidence/evidence-split-view";
 
 interface Props {
   project: DbProject;
@@ -229,8 +231,9 @@ export function ProjectPipeline({ project }: Props) {
           documents: state.documents,
           documentTexts: docTexts,
         });
+        const anchored = anchorFacts(result.facts, docTexts);
         const minted = await mintEvidenceForFacts({
-          facts: result.facts,
+          facts: anchored.facts,
           documents: state.documents,
           documentTexts: docTexts,
         });
@@ -248,8 +251,9 @@ export function ProjectPipeline({ project }: Props) {
           authorityEn: project.client_authority_en,
           counterpartyEn: project.counterparty_en,
         });
+        const anchored = anchorFacts(facts, docTexts);
         const minted = await mintEvidenceForFacts({
-          facts,
+          facts: anchored.facts,
           documents: state.documents,
           documentTexts: docTexts,
         });
@@ -434,6 +438,14 @@ export function ProjectPipeline({ project }: Props) {
 
           {active === "extract" && (
             <>
+              {state.facts.length > 0 && (
+                <EvidenceSplitView
+                  facts={state.facts}
+                  evidence={state.evidence}
+                  documents={state.documents}
+                  documentTexts={docTexts}
+                />
+              )}
               <ExtractCard
                 facts={state.facts}
                 documents={state.documents}
