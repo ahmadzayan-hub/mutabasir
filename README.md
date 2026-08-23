@@ -1,5 +1,16 @@
 # Mutabasir · The Director’s Lens
 
+## Product Authority
+
+| | |
+|---|---|
+| **Primary User** | Executives / chief engineers |
+| **Job To Be Done** | Turn hours of documents into minutes of cited executive intelligence |
+| **System of Record** | Extracted facts, evidence objects, executive briefs |
+| **System of Intelligence** | Summaries, comparisons, decision/risk extraction |
+| **Explicit Non-Goals** | Official compliance verdicts & obligations tracking (→ VERTEX) · workflow system · decision registers (→ ExecFlow) |
+
+
 **Package:** `mutabasir-director-lens`
 **Branch:** `mutabasir/director-lens-platform`
 **Repo:** [`ahmadzayan-hub/desktop-tutorial`](https://github.com/ahmadzayan-hub/desktop-tutorial)
