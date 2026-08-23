@@ -331,6 +331,23 @@ export const dictionary = {
           risk: "Risk & decisions",
         },
       },
+      evidence: {
+        title: "Evidence",
+        subtitle: "Every claim, and the exact place it came from.",
+        pick: "Select a claim to open its source.",
+        source: "Source",
+        intelligence: "Claims",
+        noText:
+          "Source text is not in memory for this document. Re-add the file on the Upload step to open evidence in place. The claim and its evidence id stay valid.",
+        notLocated:
+          "This claim's exact span was not located in the parsed text; the quote and page are shown instead.",
+        empty: "No evidence yet. Run extraction to mint evidence for each claim.",
+        idLabel: "Evidence id",
+        confidence: "Confidence",
+        copyId: "Copy id",
+        copied: "Copied",
+        showAll: "All documents",
+      },
       brief: {
         title: "Generate executive brief",
         audience: "Audience",
@@ -801,6 +818,23 @@ export const dictionary = {
           performance: "الأداء",
           risk: "المخاطر والقرارات",
         },
+      },
+      evidence: {
+        title: "الأدلة",
+        subtitle: "كل استنتاج، والموضع الذي جاء منه بالضبط.",
+        pick: "اختر استنتاجاً لفتح مصدره.",
+        source: "المصدر",
+        intelligence: "الاستنتاجات",
+        noText:
+          "نص هذا المستند غير محفوظ في الذاكرة. أعد إضافة الملف في خطوة الرفع لفتح الدليل في موضعه، والاستنتاج ومعرّف الدليل يبقيان صالحين.",
+        notLocated:
+          "تعذّر تحديد موضع هذا الاستنتاج داخل النص المُحلَّل؛ يُعرض الاقتباس والصفحة بدلاً منه.",
+        empty: "لا توجد أدلة بعد. شغّل الاستخراج لسكّ دليل لكل استنتاج.",
+        idLabel: "معرّف الدليل",
+        confidence: "الثقة",
+        copyId: "نسخ المعرّف",
+        copied: "تم النسخ",
+        showAll: "كل المستندات",
       },
       brief: {
         title: "توليد الموجز التنفيذي",
