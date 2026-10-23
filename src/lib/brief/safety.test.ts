@@ -42,3 +42,11 @@ it('publishes only current reviewed source brief, never legacy or changed text',
  expect(canPublishBrief(facts,{},brief)).toBe(false);
  expect(canPublishBrief(facts,texts,{...brief,evidence_key:undefined})).toBe(false);
 });
+
+it('does not strip decimal points or negative signs to manufacture numeric support', () => {
+ for (const [amount, quote] of [[12, 'The value is 1.2.'], [10, 'The change is -10.']] as const) {
+  expect(hasSource({...fact,payload_json:{amount},citation_quote:quote},{d:quote})).toBe(false);
+ }
+ const quote='The contract value is AED 1.24bn.';
+ expect(hasSource({...fact,payload_json:{amount:1240000000},citation_quote:quote},{d:quote})).toBe(true);
+});

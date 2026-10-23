@@ -1,5 +1,4 @@
 import type { DbExtractedFact } from '@/types/database';
-import { quotedNumbers, unsupportedNumbers } from '@/lib/extraction/anchor';
 
 // A binding to the exact claim/citation reviewed, not an authentication token.
 export function reviewKey(f: DbExtractedFact): string {
@@ -9,10 +8,14 @@ export function reviewKey(f: DbExtractedFact): string {
 function numericSupport(value: unknown, quote: string): boolean {
   if (typeof value === 'number') {
     if (!Number.isFinite(value)) return false;
-    const numbers = quotedNumbers(quote);
-    const decimals = quote.match(/\d+(?:,\d{3})*(?:\.\d+)?/g) ?? [];
-    return (Number.isInteger(value) && numbers.has(String(value)))
-      || decimals.some(n => Number(n.replaceAll(',', '')) === value);
+    // Keep decimal points and signs; 1.2 must never support 12, nor -10 support 10.
+    const scale: Record<string, number> = { k: 1e3, m: 1e6, b: 1e9, bn: 1e9, tn: 1e12 };
+    return Array.from(quote.matchAll(/(?<![\w.])[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?:\s*(?:bn|tn|[kmb])\b)?/gi)).some(match => {
+      const token = match[0].replaceAll(',', '').replace(/\s/g, '');
+      const suffix = token.match(/(bn|tn|[kmb])$/i)?.[0].toLowerCase();
+      const amount = Number(suffix ? token.slice(0, -suffix.length) : token);
+      return amount * (suffix ? scale[suffix]! : 1) === value;
+    });
   }
   if (Array.isArray(value)) return value.every(v => numericSupport(v, quote));
   if (value && typeof value === 'object') return Object.values(value).every(v => numericSupport(v, quote));
@@ -23,7 +26,7 @@ function numericSupport(value: unknown, quote: string): boolean {
 export function hasSource(f: DbExtractedFact, texts: Record<string, string>): boolean {
   const quote = f.citation_quote?.trim();
   return f.origin === 'llm' && !!quote && !!texts[f.document_id]?.includes(quote)
-    && unsupportedNumbers(f.payload_json, quote).length === 0 && numericSupport(f.payload_json, quote);
+    && numericSupport(f.payload_json, quote);
 }
 
 export function reviewedFacts(facts: DbExtractedFact[], texts: Record<string, string>): boolean {
