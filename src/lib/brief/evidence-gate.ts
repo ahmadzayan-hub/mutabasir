@@ -21,7 +21,7 @@ function numericSupport(value: unknown, quote: string): boolean {
       const number = (suffix ? raw.slice(0, -suffix.length) : raw).replace(/\.$/, '');
       if (!/^[+-]?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(number)) return false;
       const following = normalized.slice(match.index! + match[0].length);
-      if (/^[\w.,]/.test(following) || /^\s*(?:million|billion|trillion|thousand|مليون|مليار)(?=\s|$)/i.test(following)) return false;
+      if (/^[\w,]/.test(following) || /^\.\d/.test(following) || /^\s*(?:million|billion|trillion|thousand|مليون|مليار)(?=\s|$)/i.test(following)) return false;
       return Number(number.replaceAll(',', '')) * (suffix ? scale[suffix]! : 1) === value;
     });
   }
