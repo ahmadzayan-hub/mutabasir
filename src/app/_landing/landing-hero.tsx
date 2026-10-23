@@ -182,7 +182,9 @@ function HeroDashboardCard() {
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+        {/* Left padding at sm+ keeps the footer text clear of the floating
+            "Bilingual" badge anchored to the card's bottom-left corner. */}
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 sm:pl-36">
           <span className="text-[10px] font-medium text-slate-500">
             {locale === "ar" ? "موثَّق من ١٦ مستنداً" : "Cited from 16 documents"}
           </span>
