@@ -25,6 +25,7 @@ export interface PipelineDocument
 
 export interface PipelineBrief extends Omit<DbBrief, "author_id"> {
   text_ar: string;
+  evidence_key?: string;
   audience: BriefAudience;
 }
 

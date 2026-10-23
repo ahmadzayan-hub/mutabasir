@@ -74,6 +74,8 @@ export interface DbExtractedFact {
   citation_quote: string | null;
   confidence: Confidence;
   user_verified: boolean;
+  /** Local human review bound to the exact claim and citation; not authenticated approval. */
+  review_key?: string;
   /** EvidenceObject minted for this fact (docs/contracts/evidence-object.schema.json). */
   evidence_id?: string | null;
   /**

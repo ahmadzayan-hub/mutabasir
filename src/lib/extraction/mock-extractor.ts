@@ -35,7 +35,7 @@ function fact(
   payload: Record<string, unknown>,
   citation_quote: string,
   citation_page: number,
-  confidence: Confidence,
+  _confidence: Confidence,
 ): DbExtractedFact {
   return {
     id: newId("fact"),
@@ -45,7 +45,8 @@ function fact(
     payload_json: payload,
     citation_page,
     citation_quote,
-    confidence,
+    confidence: "LOW",
+    origin: "template",
     user_verified: false,
     created_at: new Date().toISOString(),
   };

@@ -50,6 +50,7 @@ export function FactItem({
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             {meta.label}
+            {fact.origin !== "llm" && (locale === "ar" ? " · تجريبي / ليس دليلاً" : " · TEMPLATE / NOT EVIDENCE")}
           </p>
           <p className="mt-1 text-sm font-medium text-slate-900">
             {formatFactPayload(fact.fact_type, fact.payload_json, locale)}
@@ -82,6 +83,7 @@ export function FactItem({
           </span>
           {onToggleVerified && (
             <button
+              disabled={fact.origin !== "llm"}
               type="button"
               onClick={() => onToggleVerified(fact.id)}
               className={cn(

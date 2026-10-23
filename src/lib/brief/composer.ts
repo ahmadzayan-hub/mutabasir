@@ -8,7 +8,10 @@ import type {
   Subject,
 } from "@/types/database";
 
+import { reviewedFacts } from "./evidence-gate";
+
 export interface ComposeBriefInput {
+  documentTexts?: Record<string, string>;
   projectName: string;
   subject: Subject;
   audience: BriefAudience;
@@ -416,11 +419,15 @@ export function composeBrief(input: ComposeBriefInput): {
   audience_label_en: string;
   audience_label_ar: string;
 } {
-  const { en, ar } = selectBrief(input);
+  const supported = reviewedFacts(input.facts, input.documentTexts ?? {});
+  const { en, ar } = supported ? {
+    en: "## Locally reviewed source claims\n\n" + input.facts.map(f => `- ${f.fact_type}: ${JSON.stringify(f.payload_json)}\n  Source ${f.document_id}: ${f.citation_quote}`).join("\n\n") + "\n\nHuman-reviewed locally; not authenticated organizational approval. No operational recommendation is generated.",
+    ar: "## ادعاءات المصادر المراجعة محلياً\n\n" + input.facts.map(f => `- ${f.fact_type}: ${JSON.stringify(f.payload_json)}\n  المصدر ${f.document_id}: ${f.citation_quote}`).join("\n\n") + "\n\nمراجعة بشرية محلية وليست اعتماداً مؤسسياً موثقاً. لم تُنتج توصيات تشغيلية.",
+  } : selectBrief(input);
   const label = AUDIENCE_LABEL[input.audience];
   return {
-    text_en: en,
-    text_ar: ar,
+    text_en: supported ? en : "DEMO / UNVERIFIED DRAFT — illustrative content, not findings or advice from your documents. Do not use for decisions or publish as evidence.\n\n" + en,
+    text_ar: supported ? ar : "مسودة تجريبية غير متحققة — محتوى توضيحي وليس نتائج أو توصيات من مستنداتك. لا تستخدم لاتخاذ القرارات أو تنشر كدليل.\n\n" + ar,
     audience_label_en: label.en,
     audience_label_ar: label.ar,
   };
