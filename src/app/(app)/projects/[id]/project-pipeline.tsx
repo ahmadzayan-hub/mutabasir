@@ -27,6 +27,7 @@ import {
 } from "@/lib/llm/web-llm";
 import { extractFactsWithLlm } from "@/lib/extraction/llm-extractor";
 import { asTemplateFacts, runMockExtraction } from "@/lib/extraction/mock-extractor";
+import { canPublishBrief, hasSource, reviewedFacts, reviewKey } from "@/lib/brief/evidence-gate";
 import { composeBrief } from "@/lib/brief/composer";
 import { StageTabs, type StageId } from "./_pipeline/stage-tabs";
 import { UploadCard } from "./_pipeline/upload-card";
@@ -73,6 +74,11 @@ export function ProjectPipeline({ project }: Props) {
     if (!hydrated) return;
     savePipeline(project.id, state);
   }, [hydrated, project.id, state]);
+
+  // Cached review flags cannot survive missing or changed source support in the UI.
+  const displayedFacts = useMemo(() => state.facts.map(f => ({ ...f,
+    user_verified: reviewedFacts([f], docTexts),
+  })), [state.facts, docTexts]);
 
   // Stage tab
   const [active, setActive] = useState<StageId>("upload");
@@ -273,12 +279,13 @@ export function ProjectPipeline({ project }: Props) {
   }
 
   function toggleVerified(factId: string) {
-    setState((s) => ({
-      ...s,
-      facts: s.facts.map((f) =>
-        f.id === factId ? { ...f, user_verified: !f.user_verified } : f,
-      ),
-    }));
+    const fact = state.facts.find(f => f.id === factId);
+    if (!fact || !hasSource(fact, docTexts)) return;
+    if (!fact.user_verified && !window.confirm(locale === "ar"
+      ? "هل قارنت كل ادعاء بالمصدر وتحققت من معناه وقيمه؟ وجود الاقتباس وحده لا يثبت صحة الادعاء."
+      : "Have you compared every claim with its source and checked its meaning and values? A matching quote alone does not establish truth.")) return;
+    setState(s => ({ ...s, facts: s.facts.map(f => f.id === factId
+      ? { ...f, user_verified: !f.user_verified, review_key: f.user_verified ? undefined : reviewKey(f) } : f) }));
   }
 
   // Brief
@@ -300,11 +307,13 @@ export function ProjectPipeline({ project }: Props) {
         counterpartyEn: project.counterparty_en,
         counterpartyAr: project.counterparty_ar,
         facts: state.facts,
+        documentTexts: docTexts,
         locale: briefLocale,
       });
       const brief: PipelineBrief = {
         id: newId("brief"),
         project_id: project.id,
+        evidence_key: reviewedFacts(state.facts, docTexts) ? JSON.stringify([state.facts.map(reviewKey), composed.text_en, composed.text_ar]) : undefined,
         text_en: composed.text_en,
         text_ar: composed.text_ar,
         audience,
@@ -345,7 +354,7 @@ export function ProjectPipeline({ project }: Props) {
   }, [state]);
 
   function handlePublish() {
-    if (!latestBrief) return;
+    if (!latestBrief || !canPublishBrief(state.facts, docTexts, latestBrief)) return;
     const snapshot: PipelineSnapshot = {
       id: newId("snap"),
       project_id: project.id,
@@ -406,6 +415,10 @@ export function ProjectPipeline({ project }: Props) {
 
   return (
     <div className="space-y-5" dir={dir}>
+      <p role="status" className="rounded border border-amber-300 p-3 text-sm">
+        {locale === "ar" ? "نموذج محلي فقط. الحقائق التجريبية ليست أدلة. النشر يتطلب المصدر المتاح ومراجعة بشرية لكل ادعاء؛ بعد إعادة التحميل أعد الاستخراج والمراجعة. لا يوجد اعتماد مؤسسي أو حفظ سحابي دائم."
+          : "Local demo only. Template facts are not evidence. Publication requires available sources and human review of every claim; after reload, re-extract and review. No organizational approval or durable cloud storage."}
+      </p>
       <StageTabs stages={stages} active={active} onSelect={setActive} />
 
       <AnimatePresence mode="wait">
@@ -443,14 +456,14 @@ export function ProjectPipeline({ project }: Props) {
             <>
               {state.facts.length > 0 && (
                 <EvidenceSplitView
-                  facts={state.facts}
+                  facts={displayedFacts}
                   evidence={state.evidence}
                   documents={state.documents}
                   documentTexts={docTexts}
                 />
               )}
               <ExtractCard
-                facts={state.facts}
+                facts={displayedFacts}
                 documents={state.documents}
                 meta={extractionMeta}
                 running={extracting}
@@ -489,6 +502,7 @@ export function ProjectPipeline({ project }: Props) {
               brief={latestBrief}
               projectId={project.id}
               quality={quality}
+              evidenceReady={canPublishBrief(state.facts, docTexts, latestBrief)}
               onPublish={handlePublish}
             />
           )}

@@ -86,6 +86,10 @@ export function PublishedView({ project }: Props) {
           presenter ? "max-w-6xl" : "max-w-4xl",
         )}
       >
+        <p className="mb-4 border border-amber-400 p-3">
+          {isAr ? "نسخة محلية تجريبية، غير معتمدة مؤسسياً. لا يمكن إعادة التحقق من المصادر بعد إعادة التحميل؛ لا تستخدم لاتخاذ القرارات."
+            : "LOCAL DEMO COPY — not organizationally approved. Sources cannot be revalidated after reload; do not use for decisions."}
+        </p>
         {!shouldPrint && (
           <div className="mb-6 flex flex-wrap justify-end gap-2 print:hidden">
             <Button

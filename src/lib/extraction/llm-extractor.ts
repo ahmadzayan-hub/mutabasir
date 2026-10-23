@@ -188,8 +188,8 @@ export async function extractFactsWithLlm(
       temperature: 0.1,
       max_tokens: 1400,
     });
-  } catch (err) {
-    console.warn("LLM chat failed", err);
+  } catch {
+    // Do not expose model errors, prompts or document content to browser logs.
     return fallbackFacts("chat_failed");
   }
 

@@ -28,13 +28,14 @@ interface Props {
   brief: PipelineBrief | null;
   projectId: string;
   quality: QualitySummary;
+  evidenceReady: boolean;
   onPublish: () => void;
 }
 
-export function PublishCard({ snapshot, brief, projectId, quality, onPublish }: Props) {
+export function PublishCard({ snapshot, brief, projectId, quality, evidenceReady, onPublish }: Props) {
   const { t } = useLocale();
   const failing = 5 - quality.score;
-  const canPublish = quality.has_brief && quality.has_facts && quality.has_documents;
+  const canPublish = evidenceReady && quality.has_brief && quality.has_facts && quality.has_documents;
 
   const checks: Array<{ ok: boolean; label: string }> = [
     { ok: quality.has_documents, label: t.pipeline.publish.checks.documents },
