@@ -26,7 +26,7 @@ import {
   unloadEngine,
 } from "@/lib/llm/web-llm";
 import { extractFactsWithLlm } from "@/lib/extraction/llm-extractor";
-import { runMockExtraction } from "@/lib/extraction/mock-extractor";
+import { asTemplateFacts, runMockExtraction } from "@/lib/extraction/mock-extractor";
 import { composeBrief } from "@/lib/brief/composer";
 import { StageTabs, type StageId } from "./_pipeline/stage-tabs";
 import { UploadCard } from "./_pipeline/upload-card";
@@ -244,13 +244,16 @@ export function ProjectPipeline({ project }: Props) {
           fallback_reason: result.fallback_reason,
         });
       } else {
-        const facts = runMockExtraction({
-          projectId: project.id,
-          subject: project.subject,
-          documents: state.documents,
-          authorityEn: project.client_authority_en,
-          counterpartyEn: project.counterparty_en,
-        });
+        // No model is loaded: these are illustrative templates, not readings of the document.
+        const facts = asTemplateFacts(
+          runMockExtraction({
+            projectId: project.id,
+            subject: project.subject,
+            documents: state.documents,
+            authorityEn: project.client_authority_en,
+            counterpartyEn: project.counterparty_en,
+          }),
+        );
         const anchored = anchorFacts(facts, docTexts);
         const minted = await mintEvidenceForFacts({
           facts: anchored.facts,
@@ -261,7 +264,7 @@ export function ProjectPipeline({ project }: Props) {
         setExtractionMeta({
           used_llm: false,
           model_id: null,
-          fallback_reason: null,
+          fallback_reason: "model_not_loaded",
         });
       }
     } finally {

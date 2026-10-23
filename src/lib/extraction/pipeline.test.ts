@@ -120,3 +120,20 @@ describe("numbers formatter integration", () => {
     expect(formatNumber(12345, "en")).toMatch(/^12[,.]?345$/);
   });
 });
+
+describe("template facts never pass as high-confidence readings", () => {
+  it("asTemplateFacts marks every template LOW and as a template", async () => {
+    const { asTemplateFacts } = await import("./mock-extractor");
+    const facts = asTemplateFacts(
+      runMockExtraction({
+        projectId: "prj_syn",
+        subject: "contract_management",
+        documents: [fakeDoc("d1", "contract-master.pdf", "contract")],
+        authorityEn: "SYNTHETIC Authority",
+        counterpartyEn: "SYNTHETIC Contractor",
+      }),
+    );
+    expect(facts.length).toBeGreaterThan(0);
+    expect(facts.every((f) => f.confidence === "LOW" && f.origin === "template")).toBe(true);
+  });
+});

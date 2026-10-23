@@ -98,11 +98,13 @@ describe("anchorFacts", () => {
     expect(res.facts[2]!.citation_quote).toBe("Completely unrelated statement about staffing levels");
   });
 
-  it("leaves facts untouched when their document text is unavailable", () => {
+  it("downgrades a fact whose document text is unavailable instead of trusting it", () => {
     const facts = [mkFact("Total contract value: AED 12,450,000", "doc_other")];
     const res = anchorFacts(facts, { doc_1: DOC });
     expect(res.anchored).toBe(0);
-    expect(res.facts[0]).toBe(facts[0]);
+    expect(res.facts[0]!.citation_quote).toBe(facts[0]!.citation_quote);
+    expect(res.facts[0]!.citation_found).toBe(false);
+    expect(res.facts[0]!.confidence).toBe("LOW");
   });
 });
 
@@ -190,5 +192,38 @@ describe("scaled shorthand is not a contradiction", () => {
   it("handles k and m as well", () => {
     expect(quotedNumbers("a 250k retainer").has("250000")).toBe(true);
     expect(quotedNumbers("a 4.5m budget").has("4500000")).toBe(true);
+  });
+});
+
+describe("a citation that is not in the source cannot stay high-confidence", () => {
+  const base = (quote: string | null): DbExtractedFact => ({
+    id: "fact_syn",
+    document_id: "doc_syn",
+    project_id: "prj_syn",
+    fact_type: "contract_value",
+    payload_json: {},
+    citation_page: 1,
+    citation_quote: quote,
+    confidence: "HIGH",
+    user_verified: false,
+    created_at: "2026-10-23T00:00:00.000Z",
+  });
+  const text = { doc_syn: "SYNTHETIC agreement. The parties agree to the scope in Schedule 1." };
+
+  it("downgrades a fabricated quote to LOW and flags it", () => {
+    const [f] = anchorFacts([base("The contract value is AED 12,500,000 inclusive of VAT.")], text).facts;
+    expect(f!.confidence).toBe("LOW");
+    expect(f!.citation_found).toBe(false);
+  });
+
+  it("downgrades a fact with no quote, or no extracted text, to LOW", () => {
+    expect(anchorFacts([base(null)], text).facts[0]!.confidence).toBe("LOW");
+    expect(anchorFacts([base("The parties agree to the scope in Schedule 1.")], {}).facts[0]!.confidence).toBe("LOW");
+  });
+
+  it("keeps a quote that is in the source, and marks it found", () => {
+    const [f] = anchorFacts([base("The parties agree to the scope in Schedule 1.")], text).facts;
+    expect(f!.confidence).toBe("HIGH");
+    expect(f!.citation_found).toBe(true);
   });
 });
