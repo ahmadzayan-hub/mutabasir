@@ -50,3 +50,16 @@ it('does not strip decimal points or negative signs to manufacture numeric suppo
  const quote='The contract value is AED 1.24bn.';
  expect(hasSource({...fact,payload_json:{amount:1240000000},citation_quote:quote},{d:quote})).toBe(true);
 });
+
+it('handles Arabic signed decimals and rejects ambiguous grouping or unsupported scales', () => {
+ const check=(amount:number,quote:string)=>hasSource({...fact,payload_json:{amount},citation_quote:quote},{d:quote});
+ expect(check(-3.2,'التغير −٣٫٢ بالمائة')).toBe(true);
+ expect(check(3.2,'التغير −٣٫٢ بالمائة')).toBe(false);
+ expect(check(32,'التغير ٣٫٢ بالمائة')).toBe(false);
+ expect(check(1240,'القيمة ١٬٢٤٠ درهم')).toBe(true);
+ expect(check(124,'Value 1,24 AED')).toBe(false);
+ expect(check(1,'Value 1,24 AED')).toBe(false);
+ expect(check(10,'Value 10 million AED')).toBe(false);
+ expect(check(10,'القيمة ١٠ مليون درهم')).toBe(false);
+ expect(check(1,'Value 1e3 AED')).toBe(false);
+});

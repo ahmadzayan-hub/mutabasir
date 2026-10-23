@@ -10,11 +10,19 @@ function numericSupport(value: unknown, quote: string): boolean {
     if (!Number.isFinite(value)) return false;
     // Keep decimal points and signs; 1.2 must never support 12, nor -10 support 10.
     const scale: Record<string, number> = { k: 1e3, m: 1e6, b: 1e9, bn: 1e9, tn: 1e12 };
-    return Array.from(quote.matchAll(/(?<![\w.])[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?:\s*(?:bn|tn|[kmb])\b)?/gi)).some(match => {
-      const token = match[0].replaceAll(',', '').replace(/\s/g, '');
-      const suffix = token.match(/(bn|tn|[kmb])$/i)?.[0].toLowerCase();
-      const amount = Number(suffix ? token.slice(0, -suffix.length) : token);
-      return amount * (suffix ? scale[suffix]! : 1) === value;
+    const normalized = quote
+      .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x660))
+      .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x6f0))
+      .replaceAll('٫', '.').replaceAll('٬', ',').replaceAll('−', '-');
+    return Array.from(normalized.matchAll(/(?<![\w.,])[+-]?\d[\d,.]*(?:\s*(?:bn|tn|[kmb])\b)?/gi)).some(match => {
+      const raw = match[0].replace(/\s/g, '');
+      const suffix = raw.match(/(bn|tn|[kmb])$/i)?.[0].toLowerCase();
+      // A sentence-ending full stop is punctuation, but interior decimals/grouping are not.
+      const number = (suffix ? raw.slice(0, -suffix.length) : raw).replace(/\.$/, '');
+      if (!/^[+-]?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(number)) return false;
+      const following = normalized.slice(match.index! + match[0].length);
+      if (/^[\w.,]/.test(following) || /^\s*(?:million|billion|trillion|thousand|مليون|مليار)(?=\s|$)/i.test(following)) return false;
+      return Number(number.replaceAll(',', '')) * (suffix ? scale[suffix]! : 1) === value;
     });
   }
   if (Array.isArray(value)) return value.every(v => numericSupport(v, quote));
