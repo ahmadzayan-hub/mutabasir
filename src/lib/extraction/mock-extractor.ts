@@ -774,3 +774,12 @@ export function formatFactPayload(
       return JSON.stringify(payload);
   }
 }
+
+/**
+ * Template facts are illustrations of what extraction produces, not readings of the uploaded
+ * document. Whenever they stand in for a real extraction they are marked as templates and LOW,
+ * so nothing presents them as high-confidence facts about the user's document.
+ */
+export function asTemplateFacts(facts: DbExtractedFact[]): DbExtractedFact[] {
+  return facts.map((f) => ({ ...f, origin: "template" as const, confidence: "LOW" as Confidence }));
+}

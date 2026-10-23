@@ -142,9 +142,17 @@ export function anchorFacts(
   let unsupported = 0;
   const out = facts.map((f) => {
     const text = documentTexts[f.document_id];
-    if (!text || !f.citation_quote) return f;
+    // No source text or no quote: nothing ties the claim to the document, so it cannot stand
+    // at the confidence the extractor claimed.
+    if (!text || !f.citation_quote) {
+      return { ...f, citation_found: false, confidence: "LOW" as DbExtractedFact["confidence"] };
+    }
 
     const res = anchorQuote(f.citation_quote, text);
+    if (!res.matched) {
+      unsupported += 1;
+      return { ...f, citation_found: false, confidence: "LOW" as DbExtractedFact["confidence"] };
+    }
     const quote = res.matched ? res.quote : f.citation_quote;
     if (res.matched && res.quote !== f.citation_quote) anchored += 1;
 
@@ -152,12 +160,13 @@ export function anchorFacts(
     // own citation contradicts it must not be presented as a fact.
     const bad = unsupportedNumbers(f.payload_json, quote);
     if (bad.length === 0) {
-      return quote === f.citation_quote ? f : { ...f, citation_quote: quote };
+      return { ...f, citation_quote: quote, citation_found: true };
     }
     unsupported += 1;
     return {
       ...f,
       citation_quote: quote,
+      citation_found: true,
       unsupported_claims: bad,
       confidence: "LOW" as DbExtractedFact["confidence"],
     };

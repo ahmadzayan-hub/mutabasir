@@ -83,6 +83,14 @@ export interface DbExtractedFact {
    * whenever either changes rather than cached and trusted.
    */
   unsupported_claims?: string[];
+  /**
+   * Whether `citation_quote` was found in the document's extracted text. Derived at read time
+   * by `anchorFacts`, never stored. A fact whose citation is not in its source is LOW and needs
+   * source verification, whatever confidence the extractor claimed.
+   */
+  citation_found?: boolean;
+  /** "template" for illustrative facts produced without reading the document (no model loaded). */
+  origin?: "llm" | "template";
   created_at: string;
 }
 

@@ -13,7 +13,7 @@ import type {
 } from "@/types/database";
 import type { PipelineDocument } from "@/lib/store/pipeline-store";
 import { newId } from "@/lib/store/pipeline-store";
-import { runMockExtraction } from "@/lib/extraction/mock-extractor";
+import { asTemplateFacts, runMockExtraction } from "@/lib/extraction/mock-extractor";
 import { chat, getLoadedModelId } from "@/lib/llm/web-llm";
 
 export interface LlmExtractInput {
@@ -153,13 +153,13 @@ export async function extractFactsWithLlm(
   input: LlmExtractInput,
 ): Promise<LlmExtractResult> {
   const fallbackFacts = (reason: string): LlmExtractResult => ({
-    facts: runMockExtraction({
+    facts: asTemplateFacts(runMockExtraction({
       projectId: input.projectId,
       subject: input.subject,
       documents: input.documents,
       authorityEn: input.authorityEn,
       counterpartyEn: input.counterpartyEn,
-    }),
+    })),
     used_llm: false,
     model_id: null,
     fallback_reason: reason,
@@ -201,7 +201,7 @@ export async function extractFactsWithLlm(
   if (facts.length === 0) return fallbackFacts("empty_array");
 
   return {
-    facts,
+    facts: facts.map((f) => ({ ...f, origin: "llm" as const })),
     used_llm: true,
     model_id: loadedModel,
     fallback_reason: null,
