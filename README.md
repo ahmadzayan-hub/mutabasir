@@ -2,6 +2,8 @@
   <img src="docs/assets/banner.svg" alt="Mutabasir, The Director's Lens: read the claim beside its source before turning it into a brief" width="100%">
 </p>
 
+<p align="center"><img src="docs/assets/hero.jpg" alt="Concept image (AI-generated). Not a product screenshot." width="100%"><br><sub><em>Concept image (AI-generated). Not a product screenshot.</em></sub></p>
+
 <p align="center"><strong>Read the claim beside its source before turning it into a brief.</strong></p>
 
 <p align="center">
