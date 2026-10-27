@@ -58,6 +58,12 @@ export function ProjectsView({ projects }: { projects: DbProject[] }) {
     });
   }, [projects, query, filter]);
 
+  const isFiltering = query.trim() !== "" || filter !== "all";
+  const clearFilters = () => {
+    setQuery("");
+    setFilter("all");
+  };
+
   return (
     <div dir={dir}>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8">
@@ -96,57 +102,82 @@ export function ProjectsView({ projects }: { projects: DbProject[] }) {
               )}
             />
             <Input
+              type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t.projects.search}
+              aria-label={t.projects.search}
               className={dir === "rtl" ? "pr-9" : "pl-9"}
             />
           </div>
-          <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm">
-            {(
-              [
-                { id: "all", label: t.projects.filterAll },
-                { id: "contract_management", label: t.projects.filterContract },
-                { id: "tender_evaluation", label: t.projects.filterTender },
-                { id: "operations_maintenance", label: t.projects.filterOps },
-                { id: "construction", label: t.projects.filterConstruction },
-              ] as { id: Filter; label: string }[]
-            ).map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setFilter(tab.id)}
-                className={cn(
-                  "relative h-8 rounded-md px-3 text-xs font-medium transition-colors sm:text-sm",
-                  filter === tab.id
-                    ? "text-brand-navy"
-                    : "text-slate-500 hover:text-slate-800",
-                )}
-              >
-                {filter === tab.id && (
-                  <motion.span
-                    layoutId="filter-pill"
-                    className="absolute inset-0 -z-0 rounded-md bg-brand-navy/10"
-                    transition={{
-                      type: "spring",
-                      stiffness: 360,
-                      damping: 30,
-                    }}
-                  />
-                )}
-                <span className="relative">{tab.label}</span>
-              </button>
-            ))}
+          <div
+            role="group"
+            aria-label={t.projects.filterLabel}
+            className="-mx-1 flex max-w-full overflow-x-auto px-1 sm:mx-0 sm:px-0"
+          >
+            <div className="inline-flex shrink-0 rounded-lg border border-slate-200 bg-white p-1 text-sm">
+              {(
+                [
+                  { id: "all", label: t.projects.filterAll },
+                  { id: "contract_management", label: t.projects.filterContract },
+                  { id: "tender_evaluation", label: t.projects.filterTender },
+                  { id: "operations_maintenance", label: t.projects.filterOps },
+                  { id: "construction", label: t.projects.filterConstruction },
+                ] as { id: Filter; label: string }[]
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setFilter(tab.id)}
+                  aria-pressed={filter === tab.id}
+                  className={cn(
+                    "relative h-8 shrink-0 whitespace-nowrap rounded-md px-3 text-xs font-medium transition-colors sm:text-sm",
+                    filter === tab.id
+                      ? "text-brand-navy"
+                      : "text-slate-500 hover:text-slate-800",
+                  )}
+                >
+                  {filter === tab.id && (
+                    <motion.span
+                      layoutId="filter-pill"
+                      className="absolute inset-0 -z-0 rounded-md bg-brand-navy/10"
+                      transition={{
+                        type: "spring",
+                        stiffness: 360,
+                        damping: 30,
+                      }}
+                    />
+                  )}
+                  <span className="relative">{tab.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+      )}
+
+      {projects.length > 0 && (
+        <p
+          aria-live="polite"
+          className={cn("text-xs text-slate-500", isFiltering && "mb-3")}
+        >
+          {isFiltering
+            ? t.projects.resultCount
+                .replace("{shown}", String(filtered.length))
+                .replace("{total}", String(projects.length))
+            : null}
+        </p>
       )}
 
       {projects.length === 0 ? (
         <EmptyState />
       ) : filtered.length === 0 ? (
         <Card>
-          <CardBody className="py-10 text-center text-sm text-slate-500">
-            {t.projects.noResults}
+          <CardBody className="flex flex-col items-center gap-4 py-10 text-center text-sm text-slate-500">
+            <p>{t.projects.noResults}</p>
+            <Button type="button" variant="secondary" onClick={clearFilters}>
+              {t.projects.clearFilters}
+            </Button>
           </CardBody>
         </Card>
       ) : (
