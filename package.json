@@ -38,14 +38,14 @@
     "lucide-react": "^0.460.0",
     "mammoth": "^1.8.0",
     "motion": "^12.38.0",
-    "next": "^15.5.25",
-    "pdfjs-dist": "^4.7.76",
+    "next": "^16.4.3",
+    "pdfjs-dist": "^4.10.38",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-hook-form": "^7.53.2",
     "server-only": "^0.0.1",
     "tailwind-merge": "^2.5.4",
-    "zod": "^3.23.8",
+    "zod": "^4.6.7",
     "zustand": "^5.0.1"
   },
   "devDependencies": {
@@ -56,11 +56,16 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^6.0.2",
     "eslint": "^9.14.0",
-    "eslint-config-next": "^15.5.23",
+    "eslint-config-next": "^16.4.3",
     "pg": "^8.20.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.0.0-beta.4",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.9"
+    "vitest": "^5.0.5"
+  },
+  "overrides": {
+    "minimatch@3": {
+      "brace-expansion": "1.1.21"
+    }
   }
 }
