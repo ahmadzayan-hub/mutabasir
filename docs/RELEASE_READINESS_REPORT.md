@@ -18,7 +18,7 @@ release; none of them are blockers for a beta / preview environment.
 | B — Testing | 🟡 Partial | 45/45 unit tests pass across 7 files; **no E2E suite** (Playwright not configured) |
 | C — UX | ✅ Pass for the covered surfaces | Mobile-first shell (bottom nav + safe-area), tabbed pipeline, presenter mode, bilingual AR/EN, RTL. Manual verification on Android Chrome captured in `.claude/uploads/`. |
 | D — Performance | 🟡 Partial | Bundle budgets look healthy (shared 102 kB, largest route 216 kB first-load). **Lighthouse not measured against a live deploy in this session.** |
-| E — Security & privacy | 🟡 Partial | On-device AI keeps documents on the device by design; RLS policies in `supabase/migrations/0001_init.sql`; `npm audit --production` has 1 critical + 8 high — see § Remaining below |
+| E - Security & privacy | ?? Partial | On-device AI keeps documents on the device by design; RLS policies in supabase/migrations/0001_init.sql; pm audit now reports 0 critical / 0 high (16 moderate, all in the ESLint toolchain) |
 | F — AI quality | 🟡 Partial | Deterministic extractor + brief composer covered by 45 tests. **No LLM-output evaluation dataset yet** — `docs/AI_EVALUATION_PLAN.md` defines the seed set to build |
 | G — Documentation | ✅ Pass | Every doc listed in section 14 of the master prompt exists (this file included) with real content, not stubs |
 
@@ -52,9 +52,12 @@ next start smoke    → /, /sign-in, /sign-up, /projects, /new, /settings,
 ## Remaining issues (must be addressed for unconditional release)
 
 ### High
-1. **Bump Next.js past 15.6** to close the Server Actions DoS advisory
-   (we use server actions in `(app)/new/actions.ts` and `(auth)/actions.ts`).
-2. **Bump `pdfjs-dist` past 4.8** to close the transitive `canvas`/`tar`
+1. ~~**Bump Next.js past 15.6**~~ — **DONE.** `next` is now `^16.4.3`, which
+   also clears the SSG/ISR cache-poisoning advisory that `15.5.x` still
+   carried. `tsc --noEmit`, `vitest run` (100/100) and `next build` all pass
+   on 16.
+2. ~~**Bump `pdfjs-dist` past 4.8**~~ — **DONE.** `pdfjs-dist` floor raised to
+   `^4.10.38` (resolved 4.10.38), clearing the transitive `canvas`/`tar`
    advisories.
 3. **Vercel env vars** — set `NEXT_PUBLIC_SUPABASE_URL`,
    `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
