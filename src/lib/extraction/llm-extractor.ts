@@ -98,27 +98,36 @@ interface RawFact {
   confidence?: unknown;
 }
 
-function coerceFacts(
-  raw: unknown,
-  projectId: string,
-  documentIdFallback: string,
-): DbExtractedFact[] {
+const normalizeQuote = (text: string) => text.replace(/\s+/g, " ").trim();
+
+function coerceFacts(raw: unknown, input: LlmExtractInput): DbExtractedFact[] {
   if (!Array.isArray(raw)) return [];
+  // Use only selected documents and the exact text window supplied to the model.
+  // The prompt does not return a document ID. A quote must therefore identify
+  // exactly one source; upload order and approximate similarity are not provenance.
+  const sources = input.documents.map((doc) => ({
+    id: doc.id,
+    text: normalizeQuote((input.documentTexts[doc.id] ?? "").slice(0, 6000)),
+  }));
   const facts: DbExtractedFact[] = [];
   for (const item of raw as RawFact[]) {
-    if (!item || typeof item.fact_type !== "string") continue;
-    if (typeof item.payload !== "object" || item.payload === null) continue;
+    if (!item || typeof item.fact_type !== "string" || !item.fact_type.trim()) continue;
+    if (typeof item.payload !== "object" || item.payload === null || Array.isArray(item.payload)) continue;
+    const quote = typeof item.citation_quote === "string" ? normalizeQuote(item.citation_quote) : "";
+    if (!quote) continue;
+    const matches = sources.filter((source) => source.text.includes(quote));
+    if (matches.length !== 1) continue;
     const confidence: Confidence =
       item.confidence === "HIGH" || item.confidence === "MEDIUM" || item.confidence === "LOW"
         ? (item.confidence as Confidence)
         : "MEDIUM";
     facts.push({
       id: newId("fact"),
-      project_id: projectId,
-      document_id: documentIdFallback,
+      project_id: input.projectId,
+      document_id: matches[0]!.id,
       fact_type: item.fact_type,
       payload_json: item.payload as Record<string, unknown>,
-      citation_page: typeof item.citation_page === "number" ? item.citation_page : null,
+      citation_page: typeof item.citation_page === "number" && Number.isInteger(item.citation_page) && item.citation_page > 0 ? item.citation_page : null,
       citation_quote: typeof item.citation_quote === "string" ? item.citation_quote : null,
       confidence,
       user_verified: false,
@@ -170,8 +179,8 @@ export async function extractFactsWithLlm(
   if (input.documents.length === 0) return fallbackFacts("no_documents");
 
   // If no document has any extractable text, the LLM has nothing to read.
-  const totalChars = Object.values(input.documentTexts).reduce(
-    (n, t) => n + (t?.length ?? 0),
+  const totalChars = input.documents.reduce(
+    (n, doc) => n + (input.documentTexts[doc.id] ?? "").slice(0, 6000).trim().length,
     0,
   );
   if (totalChars < 80) return fallbackFacts("no_text_extracted");
@@ -196,9 +205,12 @@ export async function extractFactsWithLlm(
   const json = extractJsonArray(raw);
   if (!json) return fallbackFacts("parse_failed");
 
-  const primaryDocId = input.documents[0]!.id;
-  const facts = coerceFacts(json, input.projectId, primaryDocId);
-  if (facts.length === 0) return fallbackFacts("empty_array");
+  if (!Array.isArray(json)) return fallbackFacts("parse_failed");
+  if (json.length === 0) return fallbackFacts("empty_array");
+  const facts = coerceFacts(json, input);
+  // Never silently publish a partial model result when another claim has an
+  // unknown or ambiguous source. The existing UI exposes this fallback reason.
+  if (facts.length !== json.length) return fallbackFacts("source_attribution_failed");
 
   return {
     facts: facts.map((f) => ({ ...f, origin: "llm" as const })),

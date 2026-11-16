@@ -13,3 +13,19 @@ No cloud persistence, identity migration, live DB writes, external provider call
 Rollback: reject this draft PR, or revert its commit before release. No data migration is included. Existing localStorage data is preserved.
 
 Reproduce: npm ci --ignore-scripts; npm test; npm run typecheck; npm run lint. Synthetic tests do not download a model or call a provider.
+
+## Model source attribution (2026-11-08)
+
+Model facts are assigned to the unique selected document whose supplied text
+contains the quoted citation, allowing whitespace normalization only. The search
+uses the same first 6,000 characters per document as the existing prompt. Upload
+order is never used as the source identity. Missing, ambiguous, truncated-away or
+unselected quotations cause the whole response to fall back to labelled LOW
+template facts with `source_attribution_failed`; no partial model batch is
+silently accepted. Invalid page numbers become unknown rather than trusted.
+
+The prompt, model and subject schemas are unchanged. Synthetic regressions
+exercise second-document attribution, whitespace, duplicate quotations,
+unselected/truncated sources, malformed payloads, partial failure and page numbers.
+These checks establish source association, not semantic correctness or live model
+accuracy. Human review and the existing publication gates remain required.
