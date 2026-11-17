@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { isSupabaseConfigured, supabaseUrl, supabaseAnonKey } from "./config";
 
 // Per-request Supabase client wired to the Next.js cookie store. The cookie
-// adapter handles session refresh via the middleware: when the access token
+// adapter handles session refresh via the proxy (formerly middleware): when the access token
 // expires, the SDK writes the new pair back to the response.
 
 export async function createSupabaseServerClient() {
